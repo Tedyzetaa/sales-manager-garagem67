@@ -1,0 +1,72 @@
+<!-- frontend/public/sync.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sincronização - Sales Manager</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/sync.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sync-section">
+            <div class="sync-header">
+                <h2><i class="fas fa-sync"></i> Sincronização com Garagem67</h2>
+                <div class="sync-status" id="sync-status">
+                    <i class="fas fa-check-circle"></i> Conectado
+                </div>
+            </div>
+
+            <div class="sync-controls">
+                <button id="full-sync-btn" class="btn-sync btn-sync-primary">
+                    <i class="fas fa-sync"></i> Sincronizar Tudo
+                </button>
+                
+                <button id="quick-sync-btn" class="btn-sync btn-sync-secondary">
+                    <i class="fas fa-bolt"></i> Sincronização Rápida
+                </button>
+                
+                <button id="download-json-btn" class="btn-sync">
+                    <i class="fas fa-download"></i> Exportar JSON
+                </button>
+            </div>
+
+            <div class="sync-stats" id="sync-stats">
+                <div class="stat-item">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">Novos</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">Atualizados</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">0</span>
+                    <span class="stat-label">Total</span>
+                </div>
+            </div>
+
+            <div class="sync-info">
+                <p><strong>Última sincronização:</strong> <span id="last-sync-time">Nunca</span></p>
+                <p class="text-muted">Sincronização automática a cada 30 minutos</p>
+            </div>
+        </div>
+
+        <div class="sync-section">
+            <h3>Histórico de Sincronizações</h3>
+            <div class="sync-history" id="sync-history">
+                <!-- Histórico será carregado via JavaScript -->
+                <div class="history-placeholder">
+                    <i class="fas fa-history"></i>
+                    <p>Nenhuma sincronização realizada ainda</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/sync-manager.js"></script>
+</body>
+</html>

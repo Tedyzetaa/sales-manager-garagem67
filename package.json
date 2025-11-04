@@ -1,0 +1,43 @@
+{
+  "name": "sales-manager-frontend",
+  "version": "1.0.0",
+  "description": "Interface desktop para gerenciamento de vendas",
+  "main": "public/electron.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "electron": "^25.0.0",
+    "axios": "^1.5.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.6.0"
+  },
+  "build": {
+    "appId": "com.garagem67.sales-manager",
+    "productName": "Sales Manager - Garagem 67",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "public/**/*",
+      "src/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/assets/icon.png"
+    }
+  },
+  "author": "Garagem 67",
+  "license": "MIT"
+}

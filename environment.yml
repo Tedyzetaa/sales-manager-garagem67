@@ -1,0 +1,12 @@
+name: sales-manager
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - nodejs=18  # Isso já inclui o npm
+  - sqlite
+  - pip
+  - pip:
+    - bcrypt
+    - python-dotenv

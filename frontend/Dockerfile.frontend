@@ -1,0 +1,30 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependências para Electron
+RUN apk add --no-cache \
+    git \
+    python3 \
+    make \
+    g++ \
+    libx11-dev \
+    libxkbfile-dev \
+    libsecret-dev \
+    alsa-lib-dev
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm install
+
+# Copiar código fonte
+COPY . .
+
+# Build da aplicação Electron (se necessário)
+# RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

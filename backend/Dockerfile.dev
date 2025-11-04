@@ -1,0 +1,26 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependências de desenvolvimento
+RUN apk add --no-cache curl
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+COPY .env.docker .env
+
+# Instalar dependências
+RUN npm install
+
+# Instalar nodemon globalmente
+RUN npm install -g nodemon
+
+# Copiar código fonte
+COPY . .
+
+# Criar diretório do banco de dados
+RUN mkdir -p database
+
+EXPOSE 3002
+
+CMD ["nodemon", "server.js"]

@@ -1,0 +1,23 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Instalar dependências para desenvolvimento
+RUN apk add --no-cache \
+    git \
+    python3 \
+    make \
+    g++
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm install
+
+# Copiar código fonte
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

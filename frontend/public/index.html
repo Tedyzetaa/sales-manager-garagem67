@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Manager - Garagem 67</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div id="login-page" class="active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <i class="fas fa-warehouse"></i>
+                    <h2>Sales Manager</h2>
+                    <small>Garagem 67 - Sistema de Vendas</small>
+                </div>
+                
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Usuário</label>
+                        <input type="text" id="username" class="form-control" placeholder="Digite seu usuário" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <input type="password" id="password" class="form-control" placeholder="Digite sua senha" required>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary btn-block" id="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Entrar no Sistema
+                    </button>
+                
+                    <div class="login-footer">
+                        <div class="demo-credentials">
+                            <strong>Credenciais de Demonstração:</strong><br>
+                            Usuário: <strong>admin</strong> | Senha: <strong>admin123</strong>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal (inicialmente oculta) -->
+    <div id="app" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Sales Manager <small>v2.0.0</small></span>
+                </div>
+            </div>
+            
+            <div class="header-center">
+                <div class="status-indicator online" id="connection-status">
+                    <i class="fas fa-circle"></i>
+                    <span id="status-text">Conectado</span>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="user-info">
+                    <span id="current-user">Usuário</span>
+                    <button type="button" class="btn-logout" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Sair
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Layout Principal -->
+        <div class="main-layout">
+            <!-- Sidebar -->
+            <nav class="sidebar">
+                <div class="sidebar-menu">
+                    <a href="#" class="menu-item active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <a href="#" class="menu-item" data-page="sales">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Vendas</span>
+                    </a>
+
+                    <li>
+                        <a href="/sync.html">
+                            <i class="fas fa-sync"></i> Sincronização
+                        </a>
+                    </li>
+                    
+                    <a href="#" class="menu-item" data-page="products">
+                        <i class="fas fa-boxes"></i>
+                        <span>Produtos</span>
+                    </a>
+                    
+                    <a href="#" class="menu-item" data-page="inventory">
+                        <i class="fas fa-warehouse"></i>
+                        <span>Estoque</span>
+                    </a>
+                    
+                    <a href="#" class="menu-item" data-page="customers">
+                        <i class="fas fa-users"></i>
+                        <span>Clientes</span>
+                    </a>
+                    
+                    <a href="#" class="menu-item" data-page="reports">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Relatórios</span>
+                    </a>
+                </div>
+                
+                <div class="sidebar-footer">
+                    <div class="system-info">
+                        <span>Garagem 67</span>
+                        <span id="sync-status" class="sync-status synced">Sincronizado</span>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Conteúdo Principal -->
+            <main class="main-content">
+                <!-- Dashboard Page -->
+                <div id="dashboard-page" class="page active">
+                    <div class="page-header">
+                        <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+                        <div class="page-actions">
+                            <button type="button" class="btn btn-outline" id="refresh-dashboard">
+                                <i class="fas fa-sync-alt"></i> Atualizar
+                            </button>
+                            <button type="button" class="btn btn-primary" id="force-sync">
+                                <i class="fas fa-sync"></i> Sincronizar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon sales">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="total-sales">0</h3>
+                                <p>Vendas Hoje</p>
+                            </div>
+                            <div class="stat-trend positive" id="sales-trend">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon revenue">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="total-revenue">R$ 0,00</h3>
+                                <p>Receita Hoje</p>
+                            </div>
+                            <div class="stat-trend positive" id="revenue-trend">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card warning">
+                            <div class="stat-icon products">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="low-stock">0</h3>
+                                <p>Estoque Baixo</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon customers">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="total-customers">0</h3>
+                                <p>Clientes Ativos</p>
+                            </div>
+                            <div class="stat-trend positive" id="customers-trend">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Métricas em Tempo Real -->
+                    <div class="real-time-metrics">
+                        <div class="metric-card">
+                            <div class="metric-value" id="average-ticket">R$ 0,00</div>
+                            <div class="metric-label">Ticket Médio</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="conversion-rate">0%</div>
+                            <div class="metric-label">Taxa de Conversão</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="top-product">N/A</div>
+                            <div class="metric-label">Produto Mais Vendido</div>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-content">
+                        <div class="chart-section">
+                            <div class="section-header">
+                                <h3>Vendas dos Últimos 7 Dias</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="sales-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="recent-section">
+                            <div class="section-header">
+                                <h3>Vendas Recentes</h3>
+                            </div>
+                            <div class="recent-list" id="recent-sales">
+                                <div class="empty-state">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <p>Nenhuma venda recente</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                                <!-- Sales Page -->
+                <div id="sales-page" class="page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-shopping-cart"></i> Vendas</h1>
+                        <div class="page-actions">
+                            <button type="button" class="btn btn-primary" id="new-sale-btn">
+                                <i class="fas fa-plus"></i> Nova Venda
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtros de Vendas -->
+                    <div class="filters-section">
+                        <div class="filter-group">
+                            <div class="filter-item">
+                                <label for="sales-date-filter">Data:</label>
+                                <input type="date" id="sales-date-filter" class="form-control">
+                            </div>
+                            <div class="filter-item">
+                                <label for="sales-status-filter">Status:</label>
+                                <select id="sales-status-filter" class="form-control">
+                                    <option value="all">Todas</option>
+                                    <option value="completed">Concluídas</option>
+                                    <option value="pending">Pendentes</option>
+                                    <option value="cancelled">Canceladas</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label for="sales-payment-filter">Pagamento:</label>
+                                <select id="sales-payment-filter" class="form-control">
+                                    <option value="all">Todos</option>
+                                    <option value="dinheiro">Dinheiro</option>
+                                    <option value="cartao">Cartão</option>
+                                    <option value="pix">PIX</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-outline" id="apply-sales-filters">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumo de Vendas -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon sales">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="sales-today-count">0</h3>
+                                <p>Vendas Hoje</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon revenue">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="sales-today-revenue">R$ 0,00</h3>
+                                <p>Receita Hoje</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon customers">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="sales-avg-ticket">R$ 0,00</h3>
+                                <p>Ticket Médio</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Histórico de Vendas</h3>
+                                <div class="card-actions">
+                                    <input type="text" id="sales-search" placeholder="Buscar vendas..." class="form-control">
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Cliente</th>
+                                                <th>Data</th>
+                                                <th>Itens</th>
+                                                <th>Total</th>
+                                                <th>Pagamento</th>
+                                                <th>Status</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="sales-table-body">
+                                            <tr>
+                                                <td colspan="8" class="empty-state">
+                                                    <i class="fas fa-shopping-cart"></i>
+                                                    <p>Nenhuma venda encontrada</p>
+                                                    <button type="button" class="btn btn-primary btn-sm" onclick="app.showSaleModal()">
+                                                        <i class="fas fa-plus"></i> Realizar Primeira Venda
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Page -->
+                <div id="products-page" class="page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-boxes"></i> Produtos</h1>
+                        <div class="page-actions">
+                            <button type="button" class="btn btn-primary" id="new-product-btn">
+                                <i class="fas fa-plus"></i> Novo Produto
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Lista de Produtos</h3>
+                                <div class="card-actions">
+                                    <input type="text" id="products-search" placeholder="Buscar produtos..." class="form-control">
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                       <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Cliente</th>
+                                            <th>Data</th>
+                                            <th>Itens</th>
+                                            <th>Total</th>
+                                            <th>Pagamento</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                        <tbody id="products-table-body">
+                                            <tr>
+                                                <td colspan="6" class="empty-state">
+                                                    <i class="fas fa-boxes"></i>
+                                                    <p>Nenhum produto cadastrado</p>
+                                                    <button type="button" class="btn btn-primary btn-sm" onclick="app.showProductModal()">
+                                                        <i class="fas fa-plus"></i> Cadastrar Primeiro Produto
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Page -->
+                <div id="inventory-page" class="page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-warehouse"></i> Estoque</h1>
+                        <div class="page-actions">
+                            <button type="button" class="btn btn-primary" id="new-movement-btn">
+                                <i class="fas fa-plus"></i> Nova Movimentação
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <h3 id="total-products">0</h3>
+                                <p>Total de Produtos</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-info">
+                                <h3 id="total-stock-value">R$ 0,00</h3>
+                                <p>Valor em Estoque</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card warning">
+                            <div class="stat-info">
+                                <h3 id="low-stock-count">0</h3>
+                                <p>Estoque Baixo</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card danger">
+                            <div class="stat-info">
+                                <h3 id="out-of-stock-count">0</h3>
+                                <p>Sem Estoque</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Relatório de Estoque</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Produto</th>
+                                                <th>Categoria</th>
+                                                <th>Estoque Atual</th>
+                                                <th>Estoque Mínimo</th>
+                                                <th>Status</th>
+                                                <th>Valor Estoque</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inventory-table-body">
+                                            <tr>
+                                                <td colspan="7" class="empty-state">
+                                                    <i class="fas fa-warehouse"></i>
+                                                    <p>Nenhum produto em estoque</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customers Page -->
+                <div id="customers-page" class="page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-users"></i> Clientes</h1>
+                        <div class="page-actions">
+                            <button type="button" class="btn btn-primary" id="sync-customers-page-btn">
+                                <i class="fas fa-sync"></i> Sincronizar Clientes
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Lista de Clientes</h3>
+                                <div class="card-actions">
+                                    <input type="text" id="customers-search" placeholder="Buscar clientes..." class="form-control">
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Nome</th>
+                                                <th>Email</th>
+                                                <th>Telefone</th>
+                                                <th>Última Sincronização</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="customers-table-body">
+                                            <tr>
+                                                <td colspan="4" class="empty-state">
+                                                    <i class="fas fa-users"></i>
+                                                    <p>Nenhum cliente encontrado</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Page -->
+                <div id="reports-page" class="page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-chart-bar"></i> Relatórios</h1>
+                        <div class="page-actions">
+                            <button type="button" class="btn btn-primary" id="generate-report">
+                                <i class="fas fa-download"></i> Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="page-content">
+                        <div class="advanced-filters">
+                            <div class="filter-group">
+                                <div class="filter-item">
+                                    <label for="report-period">Período:</label>
+                                    <select id="report-period" class="form-control">
+                                        <option value="today">Hoje</option>
+                                        <option value="yesterday">Ontem</option>
+                                        <option value="week">Última Semana</option>
+                                        <option value="month">Último Mês</option>
+                                        <option value="quarter">Último Trimestre</option>
+                                        <option value="custom">Personalizado</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-item">
+                                    <label for="report-type">Tipo de Relatório:</label>
+                                    <select id="report-type" class="form-control">
+                                        <option value="sales">Vendas</option>
+                                        <option value="inventory">Estoque</option>
+                                        <option value="customers">Clientes</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-item">
+                                    <label for="report-format">Formato:</label>
+                                    <select id="report-format" class="form-control">
+                                        <option value="csv">CSV</option>
+                                        <option value="json">JSON</option>
+                                        <option value="pdf">PDF</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-item" id="custom-dates" style="display: none;">
+                                    <label for="start-date">Data Inicial:</label>
+                                    <input type="date" id="start-date" class="form-control">
+                                    
+                                    <label for="end-date">Data Final:</label>
+                                    <input type="date" id="end-date" class="form-control">
+                                </div>
+                                
+                                <button type="button" class="btn btn-outline" id="apply-filters">
+                                    <i class="fas fa-filter"></i> Aplicar Filtros
+                                </button>
+                            </div>
+
+                            <div class="export-options">
+                                <button type="button" class="export-btn csv" id="export-report-csv">
+                                    <i class="fas fa-file-csv"></i> Exportar CSV
+                                </button>
+                                <button type="button" class="export-btn json" id="export-report-json">
+                                    <i class="fas fa-file-code"></i> Exportar JSON
+                                </button>
+                                <button type="button" class="export-btn pdf" id="export-report-pdf">
+                                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <h3 id="report-total-sales">0</h3>
+                                    <p>Total de Vendas</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <h3 id="report-total-revenue">R$ 0,00</h3>
+                                    <p>Receita Total</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <h3 id="report-average-ticket">R$ 0,00</h3>
+                                    <p>Ticket Médio</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-info">
+                                    <h3 id="report-products-sold">0</h3>
+                                    <p>Produtos Vendidos</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-section">
+                            <div class="section-header">
+                                <h3>Gráfico de Relatório</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="report-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-message">Carregando...</p>
+    </div>
+    <!-- TEMPORÁRIO: Botão de debug -->
+    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+        <button class="btn btn-warning btn-sm" onclick="app.debugReloadProducts()" title="Debug">
+            <i class="fas fa-bug"></i> Debug Produtos
+        </button>
+    </div>
+
+    <!-- Firebase SDK (PRIMEIRO) -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-storage-compat.js"></script>
+
+    <!-- Nossos Scripts (NA ORDEM CORRETA) -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Scripts Adicionais -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/localStorage.js"></script>
+    <script src="js/cacheManager.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/shortcuts.js"></script>
+    <script src="js/exportManager.js"></script>
+    <script src="js/syncManager.js"></script>
+</body>
+</html>

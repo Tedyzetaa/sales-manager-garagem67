@@ -1,0 +1,13 @@
+# 1. Liste os ambientes para ver se sales-manager existe
+conda env list
+
+# 2. Se existir, ative
+conda activate sales-manager
+
+# 3. Verifique se está ativo (deve mostrar * no sales-manager)
+conda info --envs
+
+# 4. Navegue para a pasta do projeto
+cd c:\sales-manager-garagem67
+
+# 5. Execute os comandos dentro do ambiente
