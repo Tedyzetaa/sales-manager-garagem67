@@ -4,3 +4,4 @@
 "dist/" 
 "build/" 
 ".env" 
+"frontend/node_modules/electron/dist/electron.exe"
