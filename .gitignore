@@ -5,3 +5,6 @@
 "build/" 
 ".env" 
 "frontend/node_modules/electron/dist/electron.exe"
+"anotações de melhorias"
+"console"
+"prompt"
