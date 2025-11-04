@@ -10,37 +10,34 @@ require('dotenv').config();
 const SyncService = require('./services/syncService');
 const syncService = new SyncService(); // ⭐ ÚNICA INSTÂNCIA
 
-// ✅ CORREÇÃO: Importar logger corretamente
-const Logger = require('./middleware/logger');
-
 const app = express();
 const PORT = process.env.PORT || 3002;
 const HOST = process.env.HOST || '0.0.0.0';
 
-// ✅✅✅ CONFIGURAÇÃO CORS SIMPLIFICADA E FUNCIONAL
+// ✅✅✅ CONFIGURAÇÃO CORS MAIS PERMISSIVA - CORREÇÃO CRÍTICA
 const corsOptions = {
-  origin: ['http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: false,
+  origin: ['http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8080'],
+  credentials: true, // ✅ CORREÇÃO: Mudar para true
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
   optionsSuccessStatus: 200
 };
 
 // ✅ APLICAR CORS PRIMEIRO
 app.use(cors(corsOptions));
 
-// ✅ MIDDLEWARE CORS MANUAL COMO BACKUP
+// ✅ MIDDLEWARE CORS MANUAL COMO BACKUP - CORRIGIDO
 app.use((req, res, next) => {
-  const allowedOrigins = ['http://localhost:5500', 'http://127.0.0.1:5500'];
+  const allowedOrigins = ['http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:3000'];
   const origin = req.headers.origin;
   
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
   
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-  res.header('Access-Control-Allow-Credentials', 'false');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true'); // ✅ CORREÇÃO: true para credentials
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -80,13 +77,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Conectar ao banco de dados
 const db = require('./config/database');
 
-// ✅ ROTA DE TESTE CORS - SIMPLIFICADA
+// ✅ ROTA DE TESTE CORS - MELHORADA
 app.get('/api/cors-test', (req, res) => {
   res.json({
     success: true,
     message: '✅ CORS está funcionando!',
     timestamp: new Date().toISOString(),
-    origin: req.headers.origin
+    origin: req.headers.origin,
+    headers: req.headers
   });
 });
 
@@ -148,11 +146,11 @@ app.use((error, req, res, next) => {
   });
 });
 
-// ✅ CORREÇÃO: Inicialização mais segura
+// ✅ CORREÇÃO: Inicialização mais segura - REMOVIDA CHAMADA startAutoSync
 setTimeout(() => {
   if (process.env.AUTO_SYNC !== 'false') {
-    syncService.startAutoSync();
-    console.log('🔄 Sincronização automática ativada');
+    console.log('ℹ️ Sincronização automática configurada para uso manual');
+    // syncService será usado apenas via rotas manuais
   }
 }, 5000);
 

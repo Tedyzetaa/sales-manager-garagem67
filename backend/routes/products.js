@@ -10,10 +10,9 @@ router.get('/', authMiddleware, (req, res) => {
         console.log('📦 Buscando produtos...');
 
         const stmt = db.prepare(`
-            SELECT p.*, c.name as category_name, i.current_stock 
+            SELECT p.*, c.name as category_name
             FROM products p 
             LEFT JOIN categories c ON p.category_id = c.id 
-            LEFT JOIN inventory i ON p.id = i.product_id 
             WHERE p.is_active = 1
             ORDER BY p.name
         `);
@@ -44,10 +43,9 @@ router.get('/:id', authMiddleware, (req, res) => {
         console.log('📦 Buscando produto ID:', productId);
 
         const stmt = db.prepare(`
-            SELECT p.*, c.name as category_name, i.current_stock 
+            SELECT p.*, c.name as category_name
             FROM products p 
             LEFT JOIN categories c ON p.category_id = c.id 
-            LEFT JOIN inventory i ON p.id = i.product_id 
             WHERE p.id = ?
         `);
         
@@ -76,10 +74,10 @@ router.get('/:id', authMiddleware, (req, res) => {
     }
 });
 
-// ✅ CRIAR PRODUTO CORRIGIDO
+// ✅ CRIAR PRODUTO CORRIGIDO (SEM TABELA INVENTORY)
 router.post('/', authMiddleware, (req, res) => {
     try {
-        const { name, price, category_id, stock_initial } = req.body;
+        const { name, price, category_id, stock_initial = 0 } = req.body;
 
         console.log('🆕 Criando produto:', { name, price, category_id, stock_initial });
 
@@ -92,53 +90,67 @@ router.post('/', authMiddleware, (req, res) => {
             });
         }
 
-        db.exec('BEGIN TRANSACTION');
+        // ✅ CORREÇÃO: Usar transação para garantir consistência
+        const transaction = db.transaction(() => {
+            try {
+                // 1. Inserir produto com estoque inicial
+                const productStmt = db.prepare(`
+                    INSERT INTO products (name, price, category_id, current_stock, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                `);
 
-        try {
-            const productStmt = db.prepare(`
-                INSERT INTO products (name, price, category_id, created_at, updated_at) 
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            `);
+                const productResult = productStmt.run(
+                    name, 
+                    parseFloat(price), 
+                    parseInt(category_id),
+                    stock
+                );
+                const productId = productResult.lastInsertRowid;
 
-            const productResult = productStmt.run(name, parseFloat(price), parseInt(category_id));
-            const productId = productResult.lastInsertRowid;
+                console.log('✅ Produto criado com ID:', productId);
 
-            console.log('✅ Produto criado com ID:', productId);
+                // 2. Registrar movimento de estoque inicial se houver estoque
+                if (stock > 0) {
+                    const movementStmt = db.prepare(`
+                        INSERT INTO inventory_movements 
+                        (product_id, type, quantity, reason, movement_date, created_at) 
+                        VALUES (?, 'entrada', ?, 'estoque_inicial', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    `);
+                    
+                    movementStmt.run(productId, stock);
+                    console.log('✅ Movimento de estoque inicial registrado');
+                }
 
-            const inventoryStmt = db.prepare(`
-                INSERT INTO inventory (product_id, current_stock, min_stock, created_at, updated_at) 
-                VALUES (?, ?, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            `);
-            
-            inventoryStmt.run(productId, stock);
-
-            const movementStmt = db.prepare(`
-                INSERT INTO stock_movements (product_id, quantity, type, reason, user_id, created_at) 
-                VALUES (?, ?, 'entrada', 'Estoque inicial', ?, CURRENT_TIMESTAMP)
-            `);
-            
-            movementStmt.run(productId, stock, req.user.userId);
-
-            db.exec('COMMIT');
-
-            console.log('✅ Estoque e movimentação registrados');
-
-            res.json({
-                success: true,
-                data: {
-                    id: productId,
+                return {
+                    productId,
                     name,
                     price: parseFloat(price),
                     category_id: parseInt(category_id),
-                    stock_initial: stock
-                },
-                message: 'Produto criado com sucesso'
-            });
+                    current_stock: stock
+                };
 
-        } catch (error) {
-            db.exec('ROLLBACK');
-            throw error;
-        }
+            } catch (error) {
+                console.error('❌ Erro na transação:', error);
+                throw error;
+            }
+        });
+
+        const result = transaction();
+
+        console.log('✅ Produto criado com sucesso:', result);
+
+        res.json({
+            success: true,
+            data: {
+                id: result.productId,
+                name: result.name,
+                price: result.price,
+                category_id: result.category_id,
+                current_stock: result.current_stock,
+                is_active: 1
+            },
+            message: 'Produto criado com sucesso!'
+        });
 
     } catch (error) {
         console.error('❌ Erro ao criar produto:', error);

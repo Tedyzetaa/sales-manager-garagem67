@@ -1,188 +1,173 @@
 const Database = require('better-sqlite3');
 const path = require('path');
-const fs = require('fs');
 
-// ✅ CORREÇÃO: Caminho absoluto para o banco de dados
 const dbPath = process.env.NODE_ENV === 'test' 
   ? ':memory:' 
   : path.join(__dirname, '..', 'database.sqlite');
 
-console.log('🗄️ Iniciando banco de dados SQLite...');
-console.log('📁 Caminho do banco:', dbPath);
-
-// Criar diretório se não existir
-if (dbPath !== ':memory:') {
-  const dbDir = path.dirname(dbPath);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
-}
+console.log('📁 Caminho do banco de dados:', dbPath);
 
 const db = new Database(dbPath, {
-  verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
+  verbose: process.env.NODE_ENV === 'development' ? console.log : null
 });
 
-// ✅ CORREÇÃO: Habilitar chaves estrangeiras
-db.pragma('foreign_keys = ON');
+// ✅ CORREÇÃO: Configurações de performance
 db.pragma('journal_mode = WAL');
+db.pragma('synchronous = NORMAL');
+db.pragma('foreign_keys = ON');
+db.pragma('busy_timeout = 5000');
 
-// ✅ CORREÇÃO: Função de inicialização do banco
+// ✅ CORREÇÃO: Criar tabelas se não existirem
 function initializeDatabase() {
   try {
     console.log('🔄 Inicializando banco de dados...');
 
-    // Criar tabelas
-    db.exec(`
-      -- Tabela de usuários
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE,
-        password_hash TEXT NOT NULL,
-        full_name TEXT,
-        role TEXT DEFAULT 'user',
-        is_active INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      -- Tabela de categorias
+    // Tabela de categorias
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
-        is_active INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `).run();
 
-      -- Tabela de produtos
+    // Tabela de produtos
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
-        price DECIMAL(10,2) NOT NULL,
+        price REAL NOT NULL DEFAULT 0,
+        current_stock INTEGER NOT NULL DEFAULT 0,
+        min_stock INTEGER NOT NULL DEFAULT 10,
         category_id INTEGER,
-        is_active INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         FOREIGN KEY (category_id) REFERENCES categories (id)
-      );
+      )
+    `).run();
 
-      -- Tabela de inventário
-      CREATE TABLE IF NOT EXISTS inventory (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_id INTEGER UNIQUE NOT NULL,
-        current_stock INTEGER DEFAULT 0,
-        min_stock INTEGER DEFAULT 10,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (product_id) REFERENCES products (id)
-      );
-
-      -- Tabela de movimentações de estoque
-      CREATE TABLE IF NOT EXISTS stock_movements (
+    // Tabela de movimentações de estoque
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS inventory_movements (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_id INTEGER NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('entrada', 'saida', 'ajuste')),
         quantity INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        reason TEXT,
-        user_id INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (product_id) REFERENCES products (id),
-        FOREIGN KEY (user_id) REFERENCES users (id)
-      );
+        reason TEXT NOT NULL,
+        observations TEXT,
+        movement_date TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (product_id) REFERENCES products (id)
+      )
+    `).run();
 
-      -- Tabela de clientes
+    // ✅ CORREÇÃO CRÍTICA: Tabela de clientes COM TODAS AS COLUNAS
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT,
         phone TEXT,
         address TEXT,
-        is_active INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+        postal_code TEXT,
+        city TEXT,
+        state TEXT,
+        firebase_uid TEXT,
+        sync_status TEXT DEFAULT 'pending',
+        last_sync_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT,
+        is_active INTEGER DEFAULT 1
+      )
+    `).run();
 
-      -- Tabela de vendas
+    // ✅ CORREÇÃO: Tabela de logs de sincronização
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS sync_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        table_name TEXT NOT NULL,
+        sync_type TEXT NOT NULL,
+        records_processed INTEGER DEFAULT 0,
+        records_created INTEGER DEFAULT 0,
+        records_updated INTEGER DEFAULT 0,
+        records_failed INTEGER DEFAULT 0,
+        sync_started_at TEXT NOT NULL DEFAULT (datetime('now')),
+        sync_completed_at TEXT,
+        sync_status TEXT DEFAULT 'running'
+      )
+    `).run();
+
+    // ✅ CORREÇÃO: Tabelas de vendas (se não existirem)
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS sales (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sale_code TEXT UNIQUE NOT NULL,
         customer_id INTEGER,
-        total_amount DECIMAL(10,2) NOT NULL,
+        total_amount REAL NOT NULL DEFAULT 0,
         payment_method TEXT,
-        observations TEXT,
-        user_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers (id),
-        FOREIGN KEY (user_id) REFERENCES users (id)
-      );
+        status TEXT DEFAULT 'completed',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (customer_id) REFERENCES customers (id)
+      )
+    `).run();
 
-      -- Tabela de itens de venda
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS sale_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         sale_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
-        product_name TEXT NOT NULL,
         quantity INTEGER NOT NULL,
-        unit_price DECIMAL(10,2) NOT NULL,
-        total_price DECIMAL(10,2) NOT NULL,
-        FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE,
+        unit_price REAL NOT NULL,
+        total_price REAL NOT NULL,
+        FOREIGN KEY (sale_id) REFERENCES sales (id),
         FOREIGN KEY (product_id) REFERENCES products (id)
-      );
+      )
+    `).run();
 
-      -- Tabela de exportações
-      CREATE TABLE IF NOT EXISTS exports (
+    // ✅ CORREÇÃO: Tabela de inventário (se não existir)
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS inventory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL,
-        filters TEXT,
-        file_path TEXT,
-        user_id INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id)
-      );
-    `);
+        product_id INTEGER NOT NULL,
+        current_stock INTEGER NOT NULL DEFAULT 0,
+        min_stock INTEGER NOT NULL DEFAULT 10,
+        last_updated TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (product_id) REFERENCES products (id)
+      )
+    `).run();
 
     // Inserir categorias padrão
-    const categoriesStmt = db.prepare(`
-      INSERT OR IGNORE INTO categories (name, description) VALUES 
-      ('Bebidas', 'Refrigerantes, sucos, água, etc.'),
-      ('Snacks', 'Salgadinhos, biscoitos, chocolates'),
-      ('Tabacaria', 'Cigarro, fumo, acessórios'),
-      ('Conveniência', 'Produtos de conveniência em geral'),
-      ('Outros', 'Outras categorias de produtos')
-    `);
-    
-    categoriesStmt.run();
-    console.log('✅ 5 categorias padrão criadas');
-
-    // Inserir usuário admin padrão
-    const bcrypt = require('bcryptjs');
-    const adminPasswordHash = bcrypt.hashSync('admin123', 10);
-    
-    const userStmt = db.prepare(`
-      INSERT OR IGNORE INTO users (username, email, password_hash, full_name, role) 
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    
-    userStmt.run('admin', 'admin@garagem67.com', adminPasswordHash, 'Administrador', 'admin');
-    console.log('✅ Usuário admin criado');
+    const categoryCount = db.prepare('SELECT COUNT(*) as count FROM categories').get().count;
+    if (categoryCount === 0) {
+      console.log('📝 Inserindo categorias padrão...');
+      const insertCategory = db.prepare(`
+        INSERT INTO categories (name, description) VALUES (?, ?)
+      `);
+      
+      const defaultCategories = [
+        ['Bebidas', 'Bebidas em geral'],
+        ['Snacks', 'Salgadinhos e petiscos'],
+        ['Tabacaria', 'Produtos de tabacaria'],
+        ['Conveniência', 'Produtos de conveniência'],
+        ['Outros', 'Outras categorias']
+      ];
+      
+      defaultCategories.forEach(([name, description]) => {
+        insertCategory.run(name, description);
+      });
+    }
 
     console.log('✅ Banco de dados inicializado com sucesso');
-    
-    // Listar tabelas criadas
-    const tablesStmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table'");
-    const tables = tablesStmt.all().map(t => t.name);
-    console.log('📊 Tabelas criadas:', tables.join(', '));
 
   } catch (error) {
-    console.error('❌ Erro na inicialização do banco:', error);
+    console.error('❌ Erro ao inicializar banco de dados:', error);
     throw error;
   }
 }
 
-// Inicializar o banco
+// Executar inicialização
 initializeDatabase();
 
 module.exports = db;
